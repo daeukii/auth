@@ -1,6 +1,9 @@
 package com.example.auth.config;
 
 import com.example.auth.filters.AllAuthenticatedFilter;
+import com.example.auth.jwt.JwtTokenFilter;
+import com.example.auth.jwt.JwtTokenUtils;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -18,7 +21,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 // @Bean을 비롯해서 여러 설정을 하기 위한 Bean 객체
 @Configuration
+@RequiredArgsConstructor
 public class WebSecurityConfig {
+    private final JwtTokenUtils jwtTokenUtils;
 
     // 메서드의 결과를 Bean 객체로 관리해주는 어노테이션
     @Bean
@@ -27,6 +32,11 @@ public class WebSecurityConfig {
     ) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
+                // Security 5 까지
+                /*.authorizeHttpRequests()
+                        .requestMatchers("")
+                        .permitAll()
+                .and()*/
                 .authorizeHttpRequests(
                         // /no-auth로 오는 요청은 모두 허가
                         auth -> auth
@@ -34,7 +44,9 @@ public class WebSecurityConfig {
                                 .requestMatchers(
                                         "/no-auth",
                                         "/users/home",
-                                        "/tests"
+                                        "/tests",
+                                        "/token/issue",
+                                        "/token/validate"
                                 )
                                 // 이 경로에 도달할 수 있는 사람에 대한 설정(모두)
                                 .permitAll()
@@ -71,8 +83,12 @@ public class WebSecurityConfig {
                                 .logoutSuccessUrl("/users/home")
                 )
                 // 특정 필터 앞에 나만의 필터를 넣는다.
-                .addFilterBefore(
+                /*.addFilterBefore(
                         new AllAuthenticatedFilter(),
+                        AuthorizationFilter.class
+                )*/
+                .addFilterBefore(
+                        new JwtTokenFilter(jwtTokenUtils),
                         AuthorizationFilter.class
                 )
         ;
